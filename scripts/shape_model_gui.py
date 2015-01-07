@@ -70,11 +70,20 @@ def preparePlot(shapeModeler):
 
 def prepareShapeModel(datasetDirectory, shape):
     import glob
-    datasetFiles_shape = glob.glob(datasetDirectory + '/'+shape+'.dat')
+    datasetFiles_shape = glob.glob(datasetDirectory + '/'+shape+'*.dat')
+    
     if(len(datasetFiles_shape)<1):
         raise Exception("Dataset not available at " + datasetDirectory + " for shape " + shape)
-    shapeModeler = ShapeModeler(filename = datasetFiles_shape[0], num_principle_components = numParams)
-    #import pdb; pdb.set_trace()
+    elif len(datasetFiles_shape)>1:
+        datasetFiles_largestCluster = glob.glob(datasetDirectory + '/'+shape+'0.dat')
+        if len(datasetFiles_largestCluster) > 0:
+            datasetFile = datasetFiles_largestCluster[0] #use largest cluster dataset
+        else:
+            datasetFile = datasetFiles_shape[0] #just choose one of them
+    else: #multiple datasets
+        datasetFile = datasetFiles_shape[0] #take first
+    shapeModeler = ShapeModeler(filename = datasetFile, num_principle_components = numParams)
+
     return shapeModeler
 
 

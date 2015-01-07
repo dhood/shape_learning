@@ -125,51 +125,19 @@ def generateSettings(shapeType):
     initialParamValue = numpy.NaN
     initialBounds = numpy.array([[numpy.NaN, numpy.NaN]])
 
-    if shapeType == 'a':
-        paramsToVary = [6]
-        initialBounds_stdDevMultiples = numpy.array([[-3, 3]])
-        datasetFile = datasetDirectory + '/a_noHook_dataset.txt'
-        initialParamValue = 0.8; 
-    elif shapeType == 'c':
-        paramToVary = 4
-        initialBounds_stdDevMultiples = numpy.array([[-10, 10]])
-        datasetFile = datasetDirectory + '/c_dataset.txt'
-
-    elif shapeType == 'd':
-        datasetFile = datasetDirectory + '/d_cursive_dataset.txt'
-    elif shapeType == 'e':
-        paramToVary = 3; 
-        initialBounds_stdDevMultiples = numpy.array([[-6, 14]])
-        datasetFile = datasetDirectory + '/e_dataset.txt'
-        #initialParamValue = 0.8
-    elif shapeType == 'm':
-        paramToVary = 6; 
-        initialBounds_stdDevMultiples = numpy.array([[-10, -6]])
-        datasetFile = datasetDirectory + '/m_dataset.txt'
-        initialParamValue = -0.5;#0.0
-    elif shapeType == 'n':
-        paramToVary = 7; 
-        datasetFile = datasetDirectory + '/n_dataset.txt'
-        initialParamValue = 0.0
-    elif shapeType == 'o':
-        paramsToVary = [4]
-        initialBounds_stdDevMultiples = numpy.array([[-3.5, 3]])
-        datasetFile = datasetDirectory + '/o_dataset.txt'
-    elif shapeType == 'r':
-        paramToVary = 1
-        datasetFile = datasetDirectory + '/r_print_dataset.txt'
-    elif shapeType == 's':
-        datasetFile = datasetDirectory + '/s_print_dataset.txt'
-    elif shapeType == 'u':
-        paramsToVary = [3]
-        datasetFile = datasetDirectory + '/u_dataset.txt'
-    elif shapeType == 'v':
-        paramToVary = 6
-        datasetFile = datasetDirectory + '/v_dataset.txt'
-    elif shapeType == 'w':
-        datasetFile = datasetDirectory + '/w_dataset.txt'
-    else:
-        raise RuntimeError("Dataset is not known for shape "+ shapeType)
+    import glob
+    datasetFiles_shape = glob.glob(datasetDirectory + '/'+shapeType+'*.dat')
+    
+    if(len(datasetFiles_shape)<1):
+        raise Exception("Dataset not available at " + datasetDirectory + " for shape " + shape)
+    elif len(datasetFiles_shape)>1:
+        datasetFiles_largestCluster = glob.glob(datasetDirectory + '/'+shapeType+'0.dat')
+        if len(datasetFiles_largestCluster) > 0:
+        	datasetFile = datasetFiles_largestCluster[0] #use largest cluster dataset
+    	else:
+    		datasetFile = datasetFiles_shape[0] #just choose one of them
+    else: #multiple datasets
+        datasetFile = datasetFiles_shape[0] #take first
 
     settings = SettingsStruct(shape_learning = shapeType,
             paramsToVary = paramsToVary, doGroupwiseComparison = True, 
