@@ -33,9 +33,10 @@ class ShapeLearner:
         #self.numPrincipleComponents = max(self.paramsToVary);
         self.numPrincipleComponents = NUM_PRINCIPLE_COMPONENTS;
         #assign a ShapeModeler to use
-        shapeModeler = ShapeModeler();
+        shapeModeler = ShapeModeler(shape_name=settings.shape_learning, samples=None, \
+                       filename=settings.datasetFile, num_principle_components=self.numPrincipleComponents);
         shapeModeler.makeDataMatrix(settings.datasetFile);
-        shapeModeler.performPCA(self.numPrincipleComponents);
+        shapeModeler.performPCA();
         self.shapeModeler = shapeModeler;
         
         self.bounds = settings.initialBounds;
