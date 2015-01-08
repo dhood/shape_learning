@@ -133,14 +133,14 @@ class ShapeLearnerManager:
     def shapeAtIndexInCurrentCollection(self, shapeType_index):
         try:
             shapeType = self.currentCollection[shapeType_index];
-        except ValueError: #unknown shape
+        except IndexError: #unknown shape
             shapeType = -1;
         return shapeType;
         
     def shapeAtIndexInAllShapesLearnt(self, shapeType_index):
         try:
             shapeType = self.shapesLearnt[shapeType_index];
-        except ValueError: #unknown shape
+        except IndexError: #unknown shape
             shapeType = -1;
         return shapeType;
             

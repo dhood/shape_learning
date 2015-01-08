@@ -97,7 +97,8 @@ class MyPaintWidget(Widget):
 
         userShape = []
         self.canvas.remove(touch.ud['line'])
-        showShape(shape, shapeIndex_demoFor)
+        if shape != -1:
+            showShape(shape, shapeIndex_demoFor)
 
 class UserInputCapture(App):
 
