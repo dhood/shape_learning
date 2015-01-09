@@ -15,7 +15,7 @@ Config.write()
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.graphics import Color, Ellipse, Line
-
+from kivy.clock import Clock
 from scipy import interpolate
 
 import argparse
@@ -152,6 +152,11 @@ def showShape(shape, shapeIndex):
     plt.clf()
     ShapeModeler.normaliseAndShowShape(shape.path)
 
+# callback for regular plot updating
+def updatePlots(dt):
+    plt.draw()
+    plt.pause(0.05)
+
 if __name__ == "__main__":
     #parse arguments
     args = parser.parse_args()
@@ -171,5 +176,7 @@ if __name__ == "__main__":
     for i in range(len(wordToLearn)):
         shape = wordManager.startNextShapeLearner()
         showShape(shape, i)
+
+    Clock.schedule_interval(updatePlots, 1/2.) #schedule regular update of plots
 
     UserInputCapture().run()
