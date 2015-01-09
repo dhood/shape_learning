@@ -105,7 +105,8 @@ class ShapeLearnerManager:
             return numItersConverged, shape;
     
     def respondToDemonstration(self, shapeIndex_messageFor, shape):
-        shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor);
+        shape_messageFor = self.shapeAtIndexInCurrentCollection(shapeIndex_messageFor);
+
         if(shape_messageFor < 0 ):
             print('Ignoring demonstration because not for valid shape type');
             return -1;
