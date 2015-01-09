@@ -148,7 +148,7 @@ def generateSettings(shapeType):
     return settings
 
 def showShape(shape, shapeIndex):
-    plt.figure(shapeIndex+1)
+    plt.figure(shapeIndex+1, figsize=(3,3))
     plt.clf()
     ShapeModeler.normaliseAndShowShape(shape.path)
 
