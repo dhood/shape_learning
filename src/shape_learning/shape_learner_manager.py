@@ -22,10 +22,8 @@ class ShapeLearnerManager:
     def __init__(self, generateSettingsFunction):
         self.generateSettings = generateSettingsFunction;
         self.shapesLearnt = [];
-        self.shapeLearners_all = [];
-        self.shapeLearners_currentCollection = [];
-        self.settings_shapeLearners_all = [];
-        self.settings_shapeLearners_currentCollection = [];
+        self.shapeLearners = {};
+        self.settings_shapeLearners = {};
         self.shapeLearnersSeenBefore_currentCollection = [];
         self.currentCollection = [];
         self.collectionsLearnt = [];
@@ -33,8 +31,6 @@ class ShapeLearnerManager:
         
         
     def initialiseShapeLearners(self):
-        self.shapeLearners_currentCollection = [];
-        self.settings_shapeLearners_currentCollection = [];
         self.shapeLearnersSeenBefore_currentCollection = [];
         for i in range(len(self.currentCollection)):
             shapeType = self.currentCollection[i];
@@ -51,34 +47,28 @@ class ShapeLearnerManager:
 
                 shapeLearner = ShapeLearner(settings);
                 self.shapesLearnt.append(shapeType);
-                self.shapeLearners_all.append(shapeLearner);
-                self.settings_shapeLearners_all.append(settings);
-                self.shapeLearners_currentCollection.append(self.shapeLearners_all[-1]);
-                self.settings_shapeLearners_currentCollection.append(self.settings_shapeLearners_all[-1]);
+                self.shapeLearners[shapeType] = shapeLearner
+                self.settings_shapeLearners[shapeType] = settings
                 
             else:
                 #use the bounds determined last time
-                previousBounds = self.shapeLearners_all[shapeType_index].getParameterBounds();
+                previousBounds = self.shapeLearners[shapeType].getParameterBounds();
                 newInitialBounds = previousBounds;
                 newInitialBounds[0,0] -= boundExpandingAmount;#USE ONLY FIRST PARAM FOR SELF-LEARNING ALGORITHM ATM
                 newInitialBounds[0,1] += boundExpandingAmount;#USE ONLY FIRST PARAM FOR SELF-LEARNING ALGORITHM ATM
-                self.shapeLearners_all[shapeType_index].setParameterBounds(newInitialBounds);
-                self.shapeLearners_currentCollection.append(self.shapeLearners_all[shapeType_index]);
-                self.settings_shapeLearners_currentCollection.append(self.settings_shapeLearners_all[shapeType_index]);
-        
+                self.shapeLearners[shapeType].setParameterBounds(newInitialBounds);        
                      
     def startNextShapeLearner(self):
         #start learning
         if( self.nextShapeLearnerToBeStarted < len(self.currentCollection) ):
             shapeType = self.currentCollection[self.nextShapeLearnerToBeStarted];
             shapeType_code = self.nextShapeLearnerToBeStarted;
-            shape_index = self.indexOfShapeInCurrentCollection(shapeType);
             if(usePrevParamsWhenShapeReappears and 
             self.shapeLearnersSeenBefore_currentCollection[self.nextShapeLearnerToBeStarted]): #shape has been seen before
-                [path, paramValues] = self.shapeLearners_currentCollection[shape_index].getLearnedShape();
+                [path, paramValues] = self.shapeLearners[shapeType].getLearnedShape();
             else:
-                [path, paramValues] = self.shapeLearners_currentCollection[shape_index].startLearning();
-            paramsToVary = self.settings_shapeLearners_currentCollection[shape_index].paramsToVary;
+                [path, paramValues] = self.shapeLearners[shapeType].startLearning();
+            paramsToVary = self.settings_shapeLearners[shapeType].paramsToVary;
             self.nextShapeLearnerToBeStarted += 1;
             shape = Shape(path=path, shapeID=0, shapeType=shapeType, 
                 shapeType_code=shapeType_code, paramsToVary=paramsToVary, paramValues=paramValues);
@@ -87,34 +77,33 @@ class ShapeLearnerManager:
             print('Don\'t know what shape learner you want me to start...');
             return -1;
 
-    def feedbackManager(self, shapeIndex_messageFor, bestShape_index, noNewShape):
-        shape_messageFor = self.shapeAtIndexInCurrentCollection(shapeIndex_messageFor);
+    def feedbackManager(self, shape_messageFor, bestShape_index, noNewShape):
         if(shape_messageFor < 0 ):
             print('Ignoring message because not for valid shape type');
             return -1;
         else:
         
             if(noNewShape): #just respond to feedback, don't make new shape 
-                self.shapeLearners_currentCollection[shapeIndex_messageFor].respondToFeedback(bestShape_index);
+                self.shapeLearners[shape_messageFor].respondToFeedback(bestShape_index);
                 return 1;
             else:               
-                [numItersConverged, newPath, newParamValues] = self.shapeLearners_currentCollection[shapeIndex_messageFor].generateNewShapeGivenFeedback(bestShape_index);
-            paramsToVary = self.settings_shapeLearners_currentCollection[shapeIndex_messageFor].paramsToVary;
+                [numItersConverged, newPath, newParamValues] = self.shapeLearners[shape_messageFor].generateNewShapeGivenFeedback(bestShape_index);
+            paramsToVary = self.settings_shapeLearners[shape_messageFor].paramsToVary;
+            shapeType_code = self.indexOfShapeInCurrentCollection(shape_messageFor)
             shape = Shape(path=newPath, shapeID=[], shapeType=shape_messageFor, 
-                shapeType_code=shapeIndex_messageFor, paramsToVary=paramsToVary, paramValues=newParamValues);
+                shapeType_code=shapeType_code, paramsToVary=paramsToVary, paramValues=newParamValues);
             return numItersConverged, shape;
     
-    def respondToDemonstration(self, shapeIndex_messageFor, shape):
-        shape_messageFor = self.shapeAtIndexInCurrentCollection(shapeIndex_messageFor);
-
+    def respondToDemonstration(self, shape_messageFor, shape):
         if(shape_messageFor < 0 ):
             print('Ignoring demonstration because not for valid shape type');
             return -1;
         else:
-            [newPath, newParamValues] = self.shapeLearners_currentCollection[shapeIndex_messageFor].respondToDemonstration(shape);
-            paramsToVary = self.settings_shapeLearners_currentCollection[shapeIndex_messageFor].paramsToVary;
+            [newPath, newParamValues] = self.shapeLearners[shape_messageFor].respondToDemonstration(shape);
+            paramsToVary = self.settings_shapeLearners[shape_messageFor].paramsToVary;
+            shapeType_code = self.indexOfShapeInCurrentCollection(shape_messageFor)
             shape = Shape(path=newPath, shapeID=[], shapeType=shape_messageFor, 
-                shapeType_code=shapeIndex_messageFor, paramsToVary=paramsToVary, paramValues=newParamValues);
+                shapeType_code=shapeType_code, paramsToVary=paramsToVary, paramValues=newParamValues);
             return shape
     
     def indexOfShapeInCurrentCollection(self, shapeType):
@@ -123,24 +112,10 @@ class ShapeLearnerManager:
         except ValueError: #unknown shape
             shapeType_index = -1;
         return shapeType_index;
-    
-    def indexOfShapeInAllShapesLearnt(self, shapeType):
-        try:
-            shapeType_index = self.shapesLearnt.index(shapeType);
-        except ValueError: #unknown shape
-            shapeType_index = -1;
-        return shapeType_index;
             
     def shapeAtIndexInCurrentCollection(self, shapeType_index):
         try:
             shapeType = self.currentCollection[shapeType_index];
-        except IndexError: #unknown shape
-            shapeType = -1;
-        return shapeType;
-        
-    def shapeAtIndexInAllShapesLearnt(self, shapeType_index):
-        try:
-            shapeType = self.shapesLearnt[shapeType_index];
         except IndexError: #unknown shape
             shapeType = -1;
         return shapeType;
@@ -160,13 +135,13 @@ class ShapeLearnerManager:
         
         return collectionSeenBefore;
 
-    def resetParameterBounds(self, shapeType_index):
-        currentBounds = self.shapeLearners_currentCollection[shapeType_index].getParameterBounds();
+    def resetParameterBounds(self, shapeType):
+        currentBounds = self.shapeLearners[shapeType].getParameterBounds();
                
         #change bounds back to the initial ones 
-        newBounds = self.shapeLearners_currentCollection[shapeType_index].initialBounds;
-        self.shapeLearners_currentCollection[shapeType_index].setParameterBounds(newBounds);
-        print('Changing bounds on shape '+self.shapeAtIndexInCurrentCollection(shapeType_index)+' from '+str(currentBounds)+' to '+str(newBounds));
+        newBounds = self.shapeLearners[shapeType].initialBounds;
+        self.shapeLearners[shapeType].setParameterBounds(newBounds);
+        print('Changing bounds on shape '+shapeType+' from '+str(currentBounds)+' to '+str(newBounds));
     
     def generateSimulatedFeedback(self, shapeType_index, newShape, newParamValue):
-        return self.shapeLearners_currentCollection[shapeType_index].generateSimulatedFeedback(newShape, newParamValue);
+        return self.shapeLearners[shapeType].generateSimulatedFeedback(newShape, newParamValue);

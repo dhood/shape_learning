@@ -93,7 +93,7 @@ class MyPaintWidget(Widget):
         userShape = numpy.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
         userShape = ShapeModeler.normaliseShapeHeight(numpy.array(userShape))
 
-        shape = wordManager.respondToDemonstration(shapeIndex_demoFor, userShape)
+        shape = wordManager.respondToDemonstration(shapeType, userShape)
 
         userShape = []
         self.canvas.remove(touch.ud['line'])
@@ -178,5 +178,5 @@ if __name__ == "__main__":
         showShape(shape, i)
 
     Clock.schedule_interval(updatePlots, 1/2.) #schedule regular update of plots
-
+    
     UserInputCapture().run()
