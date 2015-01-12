@@ -135,6 +135,12 @@ class ShapeLearnerManager:
         
         return collectionSeenBefore;
 
+    def getCurrentCollection(self):
+        return self.currentCollection
+
+    def getAllCollections(self):
+        return collectionsLearnt
+
     def resetParameterBounds(self, shapeType):
         currentBounds = self.shapeLearners[shapeType].getParameterBounds();
                
