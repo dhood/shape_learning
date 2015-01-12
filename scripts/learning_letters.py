@@ -66,8 +66,6 @@ class MyPaintWidget(Widget):
 
     def on_touch_down(self, touch):
         with self.canvas:
-
-            #self.canvas.clear()
             Color(1, 1, 0)
             d = 30.
             touch.ud['line'] = Line(points=(touch.x, touch.y))
@@ -78,13 +76,15 @@ class MyPaintWidget(Widget):
         userShape += [touch.x, -touch.y]
 
     def on_touch_up(self, touch):
-        global userShape, wordToLearn
+        global userShape
         
+        wordToLearn = wordManager.getCurrentCollection()
         if len(userShape) < 5:
-            closeFigures(len(wordToLearn))
+            
+            closeFigures(figuresToClose = range(1,len(wordToLearn)+1))
             wordToLearn = raw_input("Next word:\n")
             newWord(wordToLearn)
-            userInputCapture.display_grid() #update input based on length of new word
+            userInputCapture.display_grid(numColumns = len(wordToLearn))
 
         else:
             userShape = downsampleShape(userShape,numPoints_shapeModeler,xyxyFormat=True)
@@ -113,26 +113,27 @@ class UserInputCapture(App):
         self.painter = MyPaintWidget()
         return self.painter
 
-    def on_start(self):
-        self.display_grid()
+    #def on_start(self):
+    #    self.display_grid()
 
-    def display_grid(self): #paint lines to separate inputs for different letters
+    def display_grid(self, numColumns): #paint vertical lines to separate inputs
         self.painter.canvas.clear()
         with self.painter.canvas:
             Color(1, 1, 0)
             d = 30.
-            for i in range(len(wordToLearn)-1):
-                x = (self.painter.width/len(wordToLearn))*(i+1)
+            for i in range(numColumns-1):
+                x = (self.painter.width/numColumns)*(i+1)
                 Line(points=(x, 0, x, self.painter.height))
 
 
 
 ###---------------------------------------------- WORD LEARNING SETTINGS
-
 def generateSettings(shapeType):
-    paramsToVary = [2];            #Natural number between 1 and numPrincipleComponents, representing which principle component to vary from the template
-    initialBounds_stdDevMultiples = numpy.array([[-6, 6]]);  #Starting bounds for paramToVary, as multiples of the parameter's observed standard deviation in the dataset
-    doGroupwiseComparison = True; #instead of pairwise comparison with most recent two shapes
+    #not used while feedback is demonstrations (instead of clicking)
+    #but must be specified because of a fault in the design....
+    paramsToVary = [1];      
+    initialBounds_stdDevMultiples = numpy.array([[-6, 6]]);  
+    doGroupwiseComparison = True; 
     initialParamValue = numpy.NaN
     initialBounds = numpy.array([[numpy.NaN, numpy.NaN]])
 
@@ -141,14 +142,14 @@ def generateSettings(shapeType):
     
     if(len(datasetFiles_shape)<1):
         raise Exception("Dataset not available at " + datasetDirectory + " for shape " + shape)
-    elif len(datasetFiles_shape)>1:
+    elif len(datasetFiles_shape)>1: #multiple potential datasets
         datasetFiles_largestCluster = glob.glob(datasetDirectory + '/'+shapeType+'0.dat')
         if len(datasetFiles_largestCluster) > 0:
-        	datasetFile = datasetFiles_largestCluster[0] #use largest cluster dataset
-    	else:
+        	datasetFile = datasetFiles_largestCluster[0] #use largest cluster's dataset
+    	else: #largest cluster's dataset not available
     		datasetFile = datasetFiles_shape[0] #just choose one of them
-    else: #multiple datasets
-        datasetFile = datasetFiles_shape[0] #take first
+    else: #only one dataset available
+        datasetFile = datasetFiles_shape[0]
 
     settings = SettingsStruct(shape_learning = shapeType,
             paramsToVary = paramsToVary, doGroupwiseComparison = True, 
@@ -163,8 +164,8 @@ def showShape(shape, shapeIndex):
     ShapeModeler.normaliseAndShowShape(shape.path)
     plt.draw()
 
-def closeFigures(numFigures):
-    for i in range(1,numFigures+1):
+def closeFigures(figuresToClose):
+    for i in figuresToClose:
         plt.close(i)
 
 # callback for regular plot updating
@@ -173,14 +174,11 @@ def updatePlots(dt):
     plt.pause(0.05)
 
 def newWord(wordToLearn):
-
     wordSeenBefore = wordManager.newCollection(wordToLearn)
     for i in range(len(wordToLearn)):
         shape = wordManager.startNextShapeLearner()
-        print "plotting " +str(i)
         showShape(shape, i)
 
-wordToLearn = None
 if __name__ == "__main__":
     #parse arguments
     args = parser.parse_args()
@@ -198,5 +196,8 @@ if __name__ == "__main__":
 
     Clock.schedule_interval(updatePlots, 1/2.) #schedule regular update of plots
 
+    #allow user to provide demonstrations in a kivy app with a canvas
     userInputCapture = UserInputCapture()
     userInputCapture.run()
+    #draw lines to separate inputs for different letters
+    userInputCapture.display_grid(numColumns = len(wordToLearn)) 
