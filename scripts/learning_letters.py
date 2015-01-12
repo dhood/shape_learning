@@ -78,27 +78,34 @@ class MyPaintWidget(Widget):
         userShape += [touch.x, -touch.y]
 
     def on_touch_up(self, touch):
-        global userShape
-        touch.ud['line'].points
-        userShape = downsampleShape(userShape,numPoints_shapeModeler,xyxyFormat=True)
+        global userShape, wordToLearn
+        
+        if len(userShape) < 5:
+            closeFigures(len(wordToLearn))
+            wordToLearn = raw_input("Next word:\n")
+            newWord(wordToLearn)
+            userInputCapture.display_grid() #update input based on length of new word
 
-        shapeCentre = ShapeModeler.getShapeCentre(userShape)
-        for i in range(len(wordToLearn)):
-            if(shapeCentre[0] > (self.width/len(wordToLearn))*i):
-                shapeIndex_demoFor = i
+        else:
+            userShape = downsampleShape(userShape,numPoints_shapeModeler,xyxyFormat=True)
 
-        shapeType = wordManager.shapeAtIndexInCurrentCollection(shapeIndex_demoFor)
-        print('Received demo for letter ' + shapeType)
+            shapeCentre = ShapeModeler.getShapeCentre(userShape)
+            for i in range(len(wordToLearn)):
+                if(shapeCentre[0] > (self.width/len(wordToLearn))*i):
+                    shapeIndex_demoFor = i
 
-        userShape = numpy.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
-        userShape = ShapeModeler.normaliseShapeHeight(numpy.array(userShape))
+            shapeType = wordManager.shapeAtIndexInCurrentCollection(shapeIndex_demoFor)
+            print('Received demo for letter ' + shapeType)
 
-        shape = wordManager.respondToDemonstration(shapeType, userShape)
+            userShape = numpy.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
+            userShape = ShapeModeler.normaliseShapeHeight(numpy.array(userShape))
 
-        userShape = []
-        self.canvas.remove(touch.ud['line'])
-        if shape != -1:
-            showShape(shape, shapeIndex_demoFor)
+            shape = wordManager.respondToDemonstration(shapeType, userShape)
+
+            userShape = []
+            self.canvas.remove(touch.ud['line'])
+            if shape != -1:
+                showShape(shape, shapeIndex_demoFor)
 
 class UserInputCapture(App):
 
@@ -107,8 +114,11 @@ class UserInputCapture(App):
         return self.painter
 
     def on_start(self):
+        self.display_grid()
+
+    def display_grid(self): #paint lines to separate inputs for different letters
+        self.painter.canvas.clear()
         with self.painter.canvas:
-            print(self.painter.width)
             Color(1, 1, 0)
             d = 30.
             for i in range(len(wordToLearn)-1):
@@ -151,12 +161,26 @@ def showShape(shape, shapeIndex):
     plt.figure(shapeIndex+1, figsize=(3,3))
     plt.clf()
     ShapeModeler.normaliseAndShowShape(shape.path)
+    plt.draw()
+
+def closeFigures(numFigures):
+    for i in range(1,numFigures+1):
+        plt.close(i)
 
 # callback for regular plot updating
 def updatePlots(dt):
     plt.draw()
     plt.pause(0.05)
 
+def newWord(wordToLearn):
+
+    wordSeenBefore = wordManager.newCollection(wordToLearn)
+    for i in range(len(wordToLearn)):
+        shape = wordManager.startNextShapeLearner()
+        print "plotting " +str(i)
+        showShape(shape, i)
+
+wordToLearn = None
 if __name__ == "__main__":
     #parse arguments
     args = parser.parse_args()
@@ -167,16 +191,12 @@ if __name__ == "__main__":
     installDirectory = fileName.split('/lib')[0]
     datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/uji_pen_chars2'
 
+    plt.ion()
 
     wordManager = ShapeLearnerManager(generateSettings)
-    wordSeenBefore = wordManager.newCollection(wordToLearn)
-
-
-    plt.ion()
-    for i in range(len(wordToLearn)):
-        shape = wordManager.startNextShapeLearner()
-        showShape(shape, i)
+    newWord(wordToLearn)
 
     Clock.schedule_interval(updatePlots, 1/2.) #schedule regular update of plots
-    
-    UserInputCapture().run()
+
+    userInputCapture = UserInputCapture()
+    userInputCapture.run()
